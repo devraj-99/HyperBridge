@@ -34,6 +34,7 @@ class MediaTranslator(context: Context) : BaseTranslator(context) {
 
         // Load Album Art
         val largeIcon = sbn.notification.getLargeIcon()
+        var blurredBg: Bitmap? = null
         var albumArt: Bitmap? = if (largeIcon != null) {
             loadIconBitmap(largeIcon, sbn.packageName)
         } else {
@@ -69,6 +70,9 @@ class MediaTranslator(context: Context) : BaseTranslator(context) {
                 onContainerTitleHex = toHex(swatch.titleTextColor)
                 onContainerBodyHex = toHex(swatch.bodyTextColor)
             }
+
+            // Blurred album-art background for the expanded island card (HyperOS 3 style)
+            blurredBg = createBlurredBackground(albumArt, containerColorHex)
 
             // Round the art for the avatar
             albumArt = getRoundedCornerBitmap(albumArt, 32f)
@@ -122,12 +126,13 @@ class MediaTranslator(context: Context) : BaseTranslator(context) {
 
         // --- 4. Layout Configuration ---
 
-        // A. Background (Material Container Color)
-        builder.setBackground(
-            picKey = null,
-            color = containerColorHex,
-            type = 1
-        )
+        // A. Background (blurred album art, falls back to Material container color)
+        if (blurredBg != null) {
+            builder.addPicture(HyperPicture("bg_blur", blurredBg!!))
+            builder.setBackground(picKey = "bg_blur", color = containerColorHex, type = 2)
+        } else {
+            builder.setBackground(picKey = null, color = containerColorHex, type = 1)
+        }
 
         // B. Chat Info (Using Material On-Container Colors)
         builder.setChatInfo(
@@ -159,6 +164,18 @@ class MediaTranslator(context: Context) : BaseTranslator(context) {
     }
 
     // --- HELPERS ---
+
+    /** Downscale-upscale blur of the album art + dark scrim, so the expanded island card
+     *  shows a colourful blurred gradient like the HyperOS 3 promo. */
+    private fun createBlurredBackground(src: Bitmap, tintHex: String, size: Int = 512): Bitmap {
+        val small = Bitmap.createScaledBitmap(src, 48, 48, true)
+        val blurred = Bitmap.createScaledBitmap(small, size, size, true)
+        val canvas = Canvas(blurred)
+        // Colour wash from the dominant palette colour, then a dark scrim for text legibility
+        canvas.drawColor(0x55000000 or (0x00FFFFFF and android.graphics.Color.parseColor(tintHex)))
+        canvas.drawColor(0x73000000) // ~45% black scrim
+        return blurred
+    }
 
     private fun toHex(color: Int): String {
         // Format to #RRGGBB (ignoring alpha for safety in some UI libs, or keep alpha if needed)
