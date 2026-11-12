@@ -15,13 +15,21 @@ android {
         applicationId = "com.d4viddf.hyperbridge"
         minSdk = 35
         targetSdk = 37
-        versionCode = 34
-        versionName = "0.5.7-blur-test"
+        versionCode = 35
+        versionName = "0.5.7-blur-test2-arm64"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    splits {
+        abi {
+            isEnable = true
+            include("arm64-v8a")
+            universalApk = false
+        }
+    }
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
