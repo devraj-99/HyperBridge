@@ -24,7 +24,7 @@ android {
         abi {
             isEnable = true
             include("arm64-v8a")
-            universalApk = false
+            isUniversalApk = false
         }
     }
     buildTypes {
